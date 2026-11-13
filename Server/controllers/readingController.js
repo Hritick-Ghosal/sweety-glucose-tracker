@@ -54,26 +54,36 @@ const validateReadingInput = ({ reading_date, time_slot, glucose_value }) => {
   return null;
 };
 
-// GET ALL READINGS FOR LOGGED-IN USER (optionally filtered by ?date=YYYY-MM-DD)
+// GET ALL READINGS FOR LOGGED-IN USER (supports ?date=YYYY-MM-DD and ?page=1&limit=20)
 const getReadings = async (req, res) => {
   try {
     const userId = req.user.id;
     const { date } = req.query;
 
-    let query = `
-      SELECT id, user_id, TO_CHAR(reading_date, 'YYYY-MM-DD') AS reading_date,
-             time_slot, glucose_value, created_at
-      FROM readings
-      WHERE user_id = $1
-    `;
+    const page = Math.max(1, parseInt(req.query.page, 10) || 1);
+    const limit = Math.min(100, Math.max(1, parseInt(req.query.limit, 10) || 20));
+    const offset = (page - 1) * limit;
+
+    let whereClause = `WHERE user_id = $1`;
     const params = [userId];
 
     if (date) {
-      query += ` AND reading_date = $2`;
       params.push(date);
+      whereClause += ` AND reading_date = $${params.length}`;
     }
 
-    query += `
+    const countResult = await pool.query(
+      `SELECT COUNT(*)::int AS total FROM readings ${whereClause}`,
+      params
+    );
+    const total = countResult.rows[0].total;
+
+    const dataParams = [...params, limit, offset];
+    const query = `
+      SELECT id, user_id, TO_CHAR(reading_date, 'YYYY-MM-DD') AS reading_date,
+             time_slot, glucose_value, created_at
+      FROM readings
+      ${whereClause}
       ORDER BY reading_date DESC,
       CASE time_slot
         WHEN 'Morning' THEN 1
@@ -81,14 +91,21 @@ const getReadings = async (req, res) => {
         WHEN 'After lunch' THEN 3
         WHEN 'After dinner' THEN 4
       END ASC
+      LIMIT $${dataParams.length - 1} OFFSET $${dataParams.length}
     `;
 
-    const result = await pool.query(query, params);
+    const result = await pool.query(query, dataParams);
 
     return res.status(200).json({
       success: true,
       count: result.rows.length,
       readings: result.rows,
+      pagination: {
+        page,
+        limit,
+        total,
+        totalPages: Math.ceil(total / limit),
+      },
     });
   } catch (error) {
     console.error("Get readings error:", error.message);

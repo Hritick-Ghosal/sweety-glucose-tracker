@@ -213,4 +213,20 @@ describe("Sweety API Integration & Validation Tests", () => {
     });
     assert.equal(delRes.status, 200);
   });
+
+  it("supports pagination on GET /api/readings (?page=1&limit=2)", async () => {
+    const res = await fetch(`${baseUrl}/api/readings?page=1&limit=2`, {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    const data = await res.json();
+
+    assert.equal(res.status, 200);
+    assert.equal(data.success, true);
+    assert.ok(Array.isArray(data.readings));
+    assert.equal(data.readings.length, 2);
+    assert.equal(data.pagination.page, 1);
+    assert.equal(data.pagination.limit, 2);
+    assert.equal(data.pagination.total, 3);
+    assert.equal(data.pagination.totalPages, 2);
+  });
 });

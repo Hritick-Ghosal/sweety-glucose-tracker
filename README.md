@@ -25,6 +25,9 @@ A full-stack web application built with PostgreSQL, Express.js, React (Vite), an
    - Monthly Report: Summary statistics for the entire previous calendar month.
    - Friendly empty states when no readings exist for a selected period.
 
+4. Paginated Readings API (Bonus)
+   - Supports ?page=1&limit=20 query parameters on GET /api/readings alongside date filtering, returning pagination metadata (page, limit, total, totalPages).
+
 ---
 
 ## Tech Stack
@@ -47,5 +50,5 @@ A full-stack web application built with PostgreSQL, Express.js, React (Vite), an
 
 ### 1. Clone the Repository
 ```bash
-git clone <YOUR_GITHUB_REPO_URL>
-cd Sweety-Glucose-tracker
+git clone [https://github.com/Hritick-Ghosal/sweety-glucose-tracker.git](https://github.com/Hritick-Ghosal/sweety-glucose-tracker.git)
+cd sweety-glucose-tracker

@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { apiRequest } from "./api";
 import AuthForm from "./components/AuthForm";
 import ReadingForm from "./components/ReadingForm";
@@ -23,6 +23,7 @@ export default function App() {
   const [loadingReports, setLoadingReports] = useState(false);
   const [editingReading, setEditingReading] = useState(null);
   const [bannerError, setBannerError] = useState("");
+  const formSectionRef = useRef(null);
 
   const fetchReports = useCallback(
     async (dateToLoad = selectedDate) => {
@@ -51,6 +52,23 @@ export default function App() {
     setUser(null);
     setReports(null);
     setEditingReading(null);
+  };
+
+  const handleEditClick = (reading) => {
+    const normalizedDate = reading.reading_date
+      ? String(reading.reading_date).slice(0, 10)
+      : selectedDate;
+
+    setEditingReading({
+      ...reading,
+      reading_date: normalizedDate,
+    });
+
+    if (formSectionRef.current) {
+      formSectionRef.current.scrollIntoView({ behavior: "smooth", block: "start" });
+    } else {
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    }
   };
 
   const handleSaved = (savedDate) => {
@@ -111,18 +129,20 @@ export default function App() {
 
         {bannerError && <div className="alert error">{bannerError}</div>}
 
-        <ReadingForm
-          selectedDate={selectedDate}
-          existingReadingsForDate={reports?.daily?.readings || []}
-          editingReading={editingReading}
-          onCancelEdit={() => setEditingReading(null)}
-          onSaved={handleSaved}
-        />
+        <div ref={formSectionRef}>
+          <ReadingForm
+            selectedDate={selectedDate}
+            existingReadingsForDate={reports?.daily?.readings || []}
+            editingReading={editingReading}
+            onCancelEdit={() => setEditingReading(null)}
+            onSaved={handleSaved}
+          />
+        </div>
 
         <ReportsSection
           reports={reports}
           loading={loadingReports}
-          onEditReading={(reading) => setEditingReading(reading)}
+          onEditReading={handleEditClick}
           onDeleteReading={handleDeleteReading}
         />
       </main>

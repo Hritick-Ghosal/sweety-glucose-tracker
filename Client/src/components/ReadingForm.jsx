@@ -18,7 +18,10 @@ export default function ReadingForm({
 
   useEffect(() => {
     if (editingReading) {
-      setDate(editingReading.reading_date);
+      const cleanDate = editingReading.reading_date
+        ? String(editingReading.reading_date).slice(0, 10)
+        : selectedDate;
+      setDate(cleanDate);
       setTimeSlot(editingReading.time_slot);
       setGlucoseValue(String(editingReading.glucose_value));
       setError("");
@@ -38,11 +41,15 @@ export default function ReadingForm({
   };
 
   const validateClientSide = () => {
+    if (!date || !/^\d{4}-\d{2}-\d{2}$/.test(date)) {
+      return "Please select a valid date.";
+    }
+
     if (date > getTodayString()) {
       return "Date cannot be in the future.";
     }
 
-    if (glucoseValue === "" || glucoseValue.trim() === "") {
+    if (glucoseValue === "" || String(glucoseValue).trim() === "") {
       return "Please enter a glucose value.";
     }
 

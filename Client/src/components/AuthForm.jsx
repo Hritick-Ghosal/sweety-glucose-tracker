@@ -10,34 +10,53 @@ export default function AuthForm({ onAuthSuccess }) {
   const [successMsg, setSuccessMsg] = useState("");
   const [loading, setLoading] = useState(false);
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
+  const loginWithCredentials = async (loginEmail, loginPassword) => {
     setError("");
     setSuccessMsg("");
     setLoading(true);
-
     try {
-      if (isRegister) {
+      const data = await apiRequest("/auth/login", {
+        method: "POST",
+        body: JSON.stringify({ email: loginEmail, password: loginPassword }),
+      });
+      localStorage.setItem("sweety_token", data.token);
+      localStorage.setItem("sweety_user", JSON.stringify(data.user));
+      onAuthSuccess(data.user);
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    if (isRegister) {
+      setError("");
+      setSuccessMsg("");
+      setLoading(true);
+      try {
         await apiRequest("/auth/register", {
           method: "POST",
           body: JSON.stringify({ name, email, password }),
         });
         setSuccessMsg("Registration successful! Please log in.");
         setIsRegister(false);
-      } else {
-        const data = await apiRequest("/auth/login", {
-          method: "POST",
-          body: JSON.stringify({ email, password }),
-        });
-        localStorage.setItem("sweety_token", data.token);
-        localStorage.setItem("sweety_user", JSON.stringify(data.user));
-        onAuthSuccess(data.user);
+      } catch (err) {
+        setError(err.message);
+      } finally {
+        setLoading(false);
       }
-    } catch (err) {
-      setError(err.message);
-    } finally {
-      setLoading(false);
+    } else {
+      await loginWithCredentials(email, password);
     }
+  };
+
+  const handleDemoLogin = async () => {
+    setIsRegister(false);
+    setEmail("demo@sweety.com");
+    setPassword("Sweety123");
+    await loginWithCredentials("demo@sweety.com", "Sweety123");
   };
 
   return (
@@ -52,6 +71,8 @@ export default function AuthForm({ onAuthSuccess }) {
             className={!isRegister ? "tab active" : "tab"}
             onClick={() => {
               setIsRegister(false);
+              setEmail("demo@sweety.com");
+              setPassword("Sweety123");
               setError("");
             }}
           >
@@ -111,9 +132,26 @@ export default function AuthForm({ onAuthSuccess }) {
             />
           </div>
 
-          <button type="submit" className="btn-primary" disabled={loading}>
+          <button
+            type="submit"
+            className="btn-primary"
+            style={{ width: "100%" }}
+            disabled={loading}
+          >
             {loading ? "Please wait..." : isRegister ? "Create Account" : "Log In"}
           </button>
+
+          {!isRegister && (
+            <button
+              type="button"
+              className="btn-secondary"
+              style={{ width: "100%", marginTop: "0.65rem" }}
+              onClick={handleDemoLogin}
+              disabled={loading}
+            >
+              Try Demo Account
+            </button>
+          )}
         </form>
       </div>
     </div>
